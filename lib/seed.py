@@ -3,34 +3,45 @@
 from models.__init__ import CONN, CURSOR
 from models.trader import Trader
 from models.portfolio import Portfolio
-from models.stock import Stock
+from models.transaction import Transaction
 
 def seed_database():
 
-    Stock.drop_table()
+    Transaction.drop_table()
     Portfolio.drop_table()
     Trader.drop_table()
 
-    Stock.create_table()
-    Portfolio.create_table()
     Trader.create_table()
+    Portfolio.create_table()
+    Transaction.create_table()
 
-    apple = Stock.create("AAPL", "Apple", 150.00)
-    google = Stock.create("GOOGL", "Google", 2800.00)
-    tesla = Stock.create("TSLA", "Tesla", 850.00)
+    Trader.create("John Doe")
+    Trader.create("Jane Smith")
+    Trader.create("Alice Johnson")
 
-    tech_portfolio = Portfolio.create("Tech Portfolio")
-    energy_portfolio = Portfolio.create("Energy Portfolio")
+    Portfolio.create("Tech Portfolio", 1)  
+    Portfolio.create("Energy Portfolio", 2)  
+    Portfolio.create("Growth Portfolio", 1)  
+    Portfolio.create("Dividend Portfolio", 3)  
 
-    john = Trader.create("John Doe")
-    jane = Trader.create("Jane Smith")
+    Transaction.create("AAPL", 10, 150.00, 1)  # 10 shares of Apple at $150 each, linked to Tech Portfolio (ID = 1)
+    Transaction.create("GOOGL", 5, 2800.00, 1) 
+    Transaction.create("TSLA", 7, 850.00, 2)  
+    Transaction.create("AMZN", 15, 3300.00, 3)  
+    Transaction.create("XOM", 20, 90.00, 4)  
+    Transaction.create("AAPL", 50, 145.00, 2)  
 
-    john.portfolios.append(tech_portfolio)
-    jane.portfolios.append(energy_portfolio)
+    print("Traders:")
+    for trader in Trader.get_all():
+        print(trader)
 
-    tech_portfolio.add_stock(apple, 10) 
-    tech_portfolio.add_stock(google, 5)
-    energy_portfolio.add_stock(tesla, 7)
+    print("\nPortfolios:")
+    for portfolio in Portfolio.get_all():
+        print(portfolio)
+
+    print("\nTransactions:")
+    for transaction in Transaction.get_all():
+        print(transaction)
 
 seed_database()
-print("🌱 Traders, Portfolios, and Stocks successfully seeded! 🌱")
+print("🌱 Database successfully seeded with Traders, Portfolios, and Transactions! 🌱")
