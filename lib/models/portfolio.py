@@ -3,10 +3,10 @@ from models.__init__ import CONN, CURSOR
 class Portfolio:
     all = []
     
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, name, trader_id):
+        self._name = name
+        self._trader_id = trader_id
         self.id = None
-        Portfolio.all.append(self)
 
     @property
     def name(self):
@@ -14,18 +14,32 @@ class Portfolio:
     
     @name.setter
     def name(self, value):
-        if type(value) == str:
+        if isinstance(value, str):
             self._name = value
         else:
-            raise TypeError("Name must be a string!")
+            raise ValueError("Portfolio name must be a string!")
         
+    @property
+    def trader_id(self):
+        return self._trader_id
+
+    @trader_id.setter
+    def trader_id(self, value):
+        from models.trader import Trader
+        if isinstance(value, int) and Trader.find_by_id(value):
+            self._trader_id = value
+        else:
+            raise ValueError("Trader ID must be a valid integer and exist in the database!")
    
+
     @classmethod
     def create_table(cls):
         sql = """
             CREATE TABLE IF NOT EXISTS portfolios (
                 id INTEGER PRIMARY KEY,
-                name TEXT
+                name TEXT,
+                trader_id INTEGER,
+                FOREIGN KEY(trader_id) REFERENCES traders(id)
             )
         """
         CURSOR.execute(sql) 
@@ -40,9 +54,10 @@ class Portfolio:
 
     @classmethod
     def instance_from_db(cls, row):
-        portfolio = cls(row[1])
+        portfolio = cls(row[1], row[2])
         portfolio.id = row[0]
         return portfolio
+    
     
     @classmethod
     def find_by_id(cls, id):
@@ -63,18 +78,32 @@ class Portfolio:
     
     def save(self):
         sql = """
-            INSERT INTO portfolios (name) VALUES (?)
+            INSERT INTO portfolios (name, trader_id)
+            VALUES (?, ?)
         """
-        CURSOR.execute(sql, (self.name,))
+        CURSOR.execute(sql, (self.name, self.trader_id))
         CONN.commit()
         self.id = CURSOR.lastrowid
         Portfolio.all.append(self)
+
         
     @classmethod
-    def create(cls, name):
-        portfolio = cls(name)
+    def create(cls, name, trader_id):
+        portfolio = cls(name, trader_id)
         portfolio.save()
         return portfolio
+    
+    
+    def stocks(self):
+        from models.stock import Stock
+        sql = """
+            SELECT * FROM stocks 
+            JOIN portfolio_stocks ON stocks.id = portfolio_stocks.stock_id 
+            WHERE portfolio_stocks.portfolio_id = ?
+        """
+        rows = CURSOR.execute(sql, (self.id,)).fetchall()
+        return [Stock.instance_from_db(row) for row in rows]
+    
     
     def delete(self):
         sql = """
@@ -85,7 +114,6 @@ class Portfolio:
         Portfolio.all = [portfolio for portfolio in Portfolio.all if portfolio.id != self.id]
     
     def __repr__(self):
-        return f"<Portfolio {self.name}>"
-
+        return f"<Portfolio #{self.id}: Name = {self.name}, Trader ID = {self.trader_id}>"
     
     
