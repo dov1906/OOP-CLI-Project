@@ -112,3 +112,6 @@ class Stock:
         CURSOR.execute(sql, (self.id,))
         CONN.commit()
         Stock.all = [stock for stock in Stock.all if stock.id != self.id]
+        
+    def __repr__(self):
+        return f"<Stock {self.name}, Index: {self.stock_index}, Price: {self.price}>"
