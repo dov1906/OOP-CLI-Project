@@ -4,11 +4,10 @@ class Stock:
     all = []
     
     def __init__(self, stock_index, name, price):
-        self.stock_index = stock_index
-        self.name = name
-        self.price = price
+        self._stock_index = stock_index
+        self._name = name
+        self._price = price
         self.id = None
-        Stock.all.append(self)
         
     @property
     def stock_index(self):
@@ -16,11 +15,10 @@ class Stock:
 
     @stock_index.setter
     def stock_index(self, value):
-        if type(value) == str:
+        if isinstance(value, str):
             self._stock_index = value
         else:
-            raise TypeError("Stock index must be a string value!")
-
+            raise ValueError("Stock index must be a string!")
     
     @property
     def name(self):
@@ -28,23 +26,23 @@ class Stock:
 
     @name.setter
     def name(self, value):
-        if type(value) == str:
+        if isinstance(value, str):
             self._name = value
         else:
-            raise TypeError("Name must be a string value!")
+            raise ValueError("Name must be a string!")
+
         
-    
     @property
     def price(self):
         return self._price
 
     @price.setter
     def price(self, value):
-        if type(value) in [int, float]:
+        if isinstance(value, (int, float)):
             self._price = value
         else:
-            raise TypeError("Price must be either an integer or float!")
-        
+            raise ValueError("Price must be a number!")
+    
     
     @classmethod
     def create_table(cls):
@@ -65,7 +63,6 @@ class Stock:
             DROP TABLE IF EXISTS stocks
         """
         CURSOR.execute(sql)
-        
     
     @classmethod
     def instance_from_db(cls, row):
@@ -92,19 +89,22 @@ class Stock:
     
     def save(self):
         sql = """
-            INSERT INTO stocks (stock_index, name, price) VALUES (?, ?, ?)
+            INSERT INTO stocks (stock_index, name, price)
+            VALUES (?, ?, ?)
         """
         CURSOR.execute(sql, (self.stock_index, self.name, self.price))
         CONN.commit()
         self.id = CURSOR.lastrowid
         Stock.all.append(self)
         
+        
     @classmethod
     def create(cls, stock_index, name, price):
         stock = cls(stock_index, name, price)
         stock.save()
         return stock
-
+    
+    
     def delete(self):
         sql = """
             DELETE FROM stocks WHERE id = ?
@@ -113,5 +113,17 @@ class Stock:
         CONN.commit()
         Stock.all = [stock for stock in Stock.all if stock.id != self.id]
         
+    
+    def portfolios(self):
+        from models.portfolio import Portfolio
+        sql = """
+            SELECT portfolios.* FROM portfolios
+            JOIN portfolio_stocks ON portfolios.id = portfolio_stocks.portfolio_id
+            WHERE portfolio_stocks.stock_id = ?
+        """
+        rows = CURSOR.execute(sql, (self.id,)).fetchall()
+        return [Portfolio.instance_from_db(row) for row in rows]
+    
+    
     def __repr__(self):
-        return f"<Stock {self.name}, Index: {self.stock_index}, Price: {self.price}>"
+        return f"<Stock #{self.id}: Name = {self.name}, Index = {self.stock_index}, Price = {self.price}>"
