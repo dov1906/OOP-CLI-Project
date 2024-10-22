@@ -6,7 +6,6 @@ class Trader:
     def __init__(self, name):
         self.name = name
         self.id = None
-        Trader.all.append(self)
         
     @property
     def name(self):
@@ -93,7 +92,16 @@ class Trader:
         rows = CURSOR.execute(sql, (self.id,)).fetchall()
         return [Portfolio.instance_from_db(row) for row in rows]
         
-    
+    def transactions(self):
+        from models.transaction import Transaction
+        sql = """
+            SELECT transactions.* FROM transactions
+            JOIN portfolios ON transactions.portfolio_id = portfolios.id
+            WHERE portfolios.trader_id = ?
+        """
+        rows = CURSOR.execute(sql, (self.id,)).fetchall()
+        return [Transaction.instance_from_db(row) for row in rows]
+
 
     def __repr__(self):
-        return f"<Trader {self.name}>"
+        return f"<Trader #{self.id}: Name = {self.name}>"

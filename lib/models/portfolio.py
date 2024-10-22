@@ -94,16 +94,13 @@ class Portfolio:
         return portfolio
     
     
-    def stocks(self):
-        from models.stock import Stock
+    def transactions(self):
+        from models.transaction import Transaction
         sql = """
-            SELECT * FROM stocks 
-            JOIN portfolio_stocks ON stocks.id = portfolio_stocks.stock_id 
-            WHERE portfolio_stocks.portfolio_id = ?
+            SELECT * FROM transactions WHERE portfolio_id = ?
         """
         rows = CURSOR.execute(sql, (self.id,)).fetchall()
-        return [Stock.instance_from_db(row) for row in rows]
-    
+        return [Transaction.instance_from_db(row) for row in rows]
     
     def delete(self):
         sql = """
@@ -115,5 +112,3 @@ class Portfolio:
     
     def __repr__(self):
         return f"<Portfolio #{self.id}: Name = {self.name}, Trader ID = {self.trader_id}>"
-    
-    
