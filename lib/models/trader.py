@@ -6,7 +6,6 @@ class Trader:
     def __init__(self, name):
         self.name = name
         self.id = None
-        self.portfolios = []  # Each trader has multiple portfolios
         Trader.all.append(self)
         
     @property
@@ -15,10 +14,10 @@ class Trader:
     
     @name.setter
     def name(self, value):
-        if type(value) == str:
+        if isinstance(value, str):
             self._name = value
         else:
-            raise TypeError("Name must be a string!")
+            raise ValueError("Trader's name must be a string!")
         
 
     @classmethod
@@ -85,6 +84,16 @@ class Trader:
         CURSOR.execute(sql, (self.id,))
         CONN.commit()
         Trader.all = [trader for trader in Trader.all if trader.id != self.id]
+        
+    def portfolios(self):
+        from models.portfolio import Portfolio
+        sql = """
+            SELECT * FROM portfolios WHERE trader_id = ?
+        """
+        rows = CURSOR.execute(sql, (self.id,)).fetchall()
+        return [Portfolio.instance_from_db(row) for row in rows]
+        
+    
 
     def __repr__(self):
         return f"<Trader {self.name}>"
